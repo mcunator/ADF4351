@@ -38,12 +38,12 @@ ADF4351_RFDIV_t ADF4351_Select_Output_Divider(double RFoutFrequency)
 {
 	// Select divider
 	if (RFoutFrequency >= 2200000000.0) return ADF4351_RFDIV_1;
-	if (RFoutFrequency < 2200000000.0) return ADF4351_RFDIV_2;
-	if (RFoutFrequency < 1100000000.0) return ADF4351_RFDIV_4;
-	if (RFoutFrequency < 550000000.0) return ADF4351_RFDIV_8;
-	if (RFoutFrequency < 275000000.0) return ADF4351_RFDIV_16;
-	if (RFoutFrequency < 137500000.0) return ADF4351_RFDIV_32;
-  return ADF4351_RFDIV_64;
+	if (RFoutFrequency > 1100000000.0) return ADF4351_RFDIV_2;
+	if (RFoutFrequency > 550000000.0) return ADF4351_RFDIV_4;
+	if (RFoutFrequency > 275000000.0) return ADF4351_RFDIV_8;
+	if (RFoutFrequency > 137500000.0) return ADF4351_RFDIV_16;
+	if (RFoutFrequency > 68750000.0) return ADF4351_RFDIV_32;
+	return ADF4351_RFDIV_64;
 }
 
 // greatest common denominator - euclid algo w/o recursion
@@ -96,9 +96,9 @@ ADF4351_ERR_t UpdateFrequencyRegisters(double RFout, double REFin, double Output
 	RefDoubler = ADF4351_Reg2.b.RMul2 + 1;     // 1 or 2
 	Rcounter = ADF4351_Reg2.b.RCountVal;
 	PFDFreq = (REFin * RefDoubler / RefD2) / Rcounter;
-
-	OutputDivider = (1U<<ADF4351_Select_Output_Divider(RFout));
-
+	
+	ADF4351_Reg4.b.RfDivSel = ADF4351_Select_Output_Divider(RFout);
+	OutputDivider = (1U << ADF4351_Reg4.b.RfDivSel);
 	
 	if (ADF4351_Reg4.b.Feedback == 1) // fundamental
 			N = ((RFout * OutputDivider) / PFDFreq);
@@ -153,6 +153,7 @@ ADF4351_ERR_t UpdateFrequencyRegisters(double RFout, double REFin, double Output
 					BandSelectClockDivider = (double)temp;
 				}
 		}
+		BandSelectClockDivider = 200; // PDF freq always 25MHz, band recomended is 125 kHz
 		BandSelectClockFrequency = (PFDFreq / (uint32_t)BandSelectClockDivider);
 
 		/* Check parameters */
